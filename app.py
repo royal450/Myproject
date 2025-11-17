@@ -1,72 +1,91 @@
-from flask import Flask, request, jsonify
-import json
-import requests
+from flask import Flask, request, jsonify, render_template
+import os, json, requests
 from google.oauth2 import service_account
 import google.auth.transport.requests as req
 
 app = Flask(__name__)
 
-# Load Firebase service account
-CREDENTIALS = "service-account.json"
+# ------------------------
+# ACCESS TOKEN GENERATOR
+# ------------------------
+def get_fcm_token():
+    service_json = os.getenv("SERVICE_ACCOUNT_JSON")
+    if not service_json:
+        raise Exception("SERVICE_ACCOUNT_JSON ENV not set")
 
-def get_access_token():
-    """Generate Firebase OAuth access token"""
-    creds = service_account.Credentials.from_service_account_file(
-        CREDENTIALS,
+    creds_info = json.loads(service_json)
+
+    creds = service_account.Credentials.from_service_account_info(
+        creds_info,
         scopes=["https://www.googleapis.com/auth/firebase.messaging"]
     )
+
     auth_req = req.Request()
     creds.refresh(auth_req)
     return creds.token
 
 
+# ------------------------
+# SEND PUSH NOTIFICATION
+# ------------------------
 @app.route("/send", methods=["POST"])
 def send_notification():
     try:
-        body = request.get_json()
+        data = request.get_json()
+        user_token = data.get("token")
+        title = data.get("title", "FCM Title")
+        body = data.get("body", "FCM Body")
 
-        device_token = body.get("token")
-        title = body.get("title", "Default Title")
-        message_body = body.get("body", "Default Message")
-
-        # Create OAuth Token
-        token = get_access_token()
+        # OAuth
+        access_token = get_fcm_token()
 
         # Replace with your project ID
         project_id = "daily-campaign-king"
         url = f"https://fcm.googleapis.com/v1/projects/{project_id}/messages:send"
 
-        data = {
+        # Payload
+        payload = {
             "message": {
-                "token": device_token,
                 "notification": {
                     "title": title,
-                    "body": message_body
+                    "body": body
                 }
             }
         }
 
+        # Token or Topic
+        if user_token.startswith("/topics/"):
+            payload["message"]["topic"] = user_token.replace("/topics/", "")
+        else:
+            payload["message"]["token"] = user_token
+
         headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json; UTF-8"
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
         }
 
-        response = requests.post(url, headers=headers, json=data)
+        response = requests.post(url, headers=headers, json=payload)
 
         return jsonify({
             "status": response.status_code,
-            "response": response.json()
+            "firebase_response": response.json()
         })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
+# ------------------------
+# HOME ROUTE (TEST PAGE)
+# ------------------------
 @app.route("/")
 def home():
-    return "🔥 FCM Flask API Running!"
+    return render_template("index.html")
 
 
+# ------------------------
+# MAIN
+# ------------------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, debug=True)
-  
+    port = int(os.environ.get("PORT", 8000))
+    app.run(host="0.0.0.0", port=port)
