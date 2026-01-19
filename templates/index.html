@@ -2,63 +2,148 @@
 <html>
 <head>
     <title>Email Marketing Tool</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Arial; max-width: 800px; margin: 0 auto; padding: 20px; }
-        .card { border: 1px solid #ddd; padding: 20px; margin: 10px 0; border-radius: 10px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 10px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        h1 { color: #333; text-align: center; margin-bottom: 30px; }
+        .card { border: 1px solid #ddd; padding: 20px; margin: 15px 0; border-radius: 8px; background: #f9f9f9; }
         button { background: #0070f3; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
-        input, textarea { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
+        button:hover { background: #0051cc; }
+        input, textarea, select { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
         .stats { display: flex; gap: 10px; margin: 20px 0; }
-        .stat-box { flex: 1; background: #f0f0f0; padding: 15px; border-radius: 5px; text-align: center; }
+        .stat-box { flex: 1; background: #0070f3; color: white; padding: 15px; border-radius: 5px; text-align: center; }
+        .tab { display: none; }
+        .tab.active { display: block; }
+        .nav { display: flex; gap: 10px; margin: 20px 0; }
+        .nav button { background: #666; }
+        .nav button.active { background: #0070f3; }
+        .success { color: green; }
+        .error { color: red; }
     </style>
 </head>
 <body>
-    <h1>📧 Email Marketing Tool</h1>
-    
-    <div class="stats">
-        <div class="stat-box">
-            <h3>Today</h3>
-            <div id="todayCount">0</div>
+    <div class="container">
+        <h1>📧 Email Marketing Tool</h1>
+        
+        <div class="stats">
+            <div class="stat-box">
+                <h3>Today</h3>
+                <div id="todayCount">0/10</div>
+            </div>
+            <div class="stat-box">
+                <h3>Total</h3>
+                <div id="totalCount">0</div>
+            </div>
+            <div class="stat-box">
+                <h3>Plan</h3>
+                <div id="planType">Free</div>
+            </div>
         </div>
-        <div class="stat-box">
-            <h3>Total</h3>
-            <div id="totalCount">0</div>
+        
+        <div class="nav">
+            <button class="active" onclick="showTab('dashboard')">Dashboard</button>
+            <button onclick="showTab('send')">Send Email</button>
+            <button onclick="showTab('smtp')">SMTP</button>
+            <button onclick="showTab('history')">History</button>
+            <button onclick="showTab('upgrade')">Upgrade</button>
         </div>
-        <div class="stat-box">
-            <h3>Plan</h3>
-            <div id="planType">Free</div>
+        
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab active card">
+            <h2>Dashboard</h2>
+            <p>Welcome to Email Marketing Tool!</p>
+            <p><strong>Features:</strong></p>
+            <ul>
+                <li>Send single emails</li>
+                <li>Send bulk emails via CSV</li>
+                <li>Manage multiple SMTP accounts</li>
+                <li>Track email history</li>
+                <li>Free: 10 emails/day</li>
+                <li>Pro: 100 emails/day ($99/month)</li>
+            </ul>
+            <button onclick="loadStats()">Refresh Stats</button>
+        </div>
+        
+        <!-- Send Email Tab -->
+        <div id="send" class="tab card">
+            <h2>Send Email</h2>
+            <input type="email" id="toEmail" placeholder="To Email">
+            <input type="text" id="subject" placeholder="Subject">
+            <textarea id="body" rows="4" placeholder="Message"></textarea>
+            <select id="smtpSelect">
+                <option value="">Select SMTP Account</option>
+            </select>
+            <button onclick="sendEmail()">Send Email</button>
+            <div id="result"></div>
+        </div>
+        
+        <!-- SMTP Tab -->
+        <div id="smtp" class="tab card">
+            <h2>SMTP Accounts</h2>
+            <h3>Add New:</h3>
+            <input type="email" id="smtpEmail" placeholder="Your Email">
+            <input type="password" id="smtpPassword" placeholder="Password">
+            <input type="text" id="smtpServer" value="smtp.gmail.com" placeholder="SMTP Server">
+            <input type="number" id="smtpPort" value="587" placeholder="Port">
+            <button onclick="addSMTP()">Add SMTP</button>
+            
+            <h3>Your Accounts:</h3>
+            <div id="smtpList"></div>
+        </div>
+        
+        <!-- History Tab -->
+        <div id="history" class="tab card">
+            <h2>Email History</h2>
+            <button onclick="loadHistory()">Refresh</button>
+            <div id="historyList"></div>
+        </div>
+        
+        <!-- Upgrade Tab -->
+        <div id="upgrade" class="tab card">
+            <h2>Upgrade to Pro</h2>
+            <p><strong>Pro Features:</strong></p>
+            <ul>
+                <li>100 emails per day (instead of 10)</li>
+                <li>Priority support</li>
+                <li>Advanced analytics</li>
+                <li>No ads</li>
+            </ul>
+            <p><strong>Price: $99/month</strong></p>
+            <button onclick="upgradePlan()">Upgrade Now</button>
         </div>
     </div>
-    
-    <div class="card">
-        <h2>Send Email</h2>
-        <input type="email" id="toEmail" placeholder="To Email">
-        <input type="text" id="subject" placeholder="Subject">
-        <textarea id="body" rows="4" placeholder="Message"></textarea>
-        <select id="smtpAccount">
-            <option value="">Select SMTP Account</option>
-        </select>
-        <button onclick="sendEmail()">Send Email</button>
-        <div id="result"></div>
-    </div>
-    
-    <div class="card">
-        <h2>Add SMTP Account</h2>
-        <input type="email" id="smtpEmail" placeholder="Your Email">
-        <input type="password" id="smtpPassword" placeholder="Password">
-        <input type="text" id="smtpServer" value="smtp.gmail.com" placeholder="SMTP Server">
-        <input type="number" id="smtpPort" value="587" placeholder="Port">
-        <button onclick="addSMTP()">Add SMTP</button>
-    </div>
-    
-    <div class="card">
-        <h2>Email History</h2>
-        <button onclick="loadHistory()">Refresh History</button>
-        <div id="history"></div>
-    </div>
-    
+
     <script>
         const API_URL = window.location.origin + '/api';
         
+        // Tab management
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active from all nav buttons
+            document.querySelectorAll('.nav button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active to clicked button
+            event.target.classList.add('active');
+            
+            // Load data for tab
+            if(tabName === 'dashboard') loadStats();
+            if(tabName === 'smtp') loadSMTP();
+            if(tabName === 'history') loadHistory();
+        }
+        
+        // Load stats
         async function loadStats() {
             try {
                 const res = await fetch(API_URL + '/stats');
@@ -76,35 +161,54 @@
             }
         }
         
+        // Load SMTP accounts
         async function loadSMTP() {
             try {
                 const res = await fetch(API_URL + '/smtp');
                 const data = await res.json();
                 
-                const select = document.getElementById('smtpAccount');
+                // Update dropdown
+                const select = document.getElementById('smtpSelect');
                 select.innerHTML = '<option value="">Select SMTP Account</option>';
+                
+                // Update list
+                const list = document.getElementById('smtpList');
+                list.innerHTML = '';
                 
                 if(data.success && data.accounts.length > 0) {
                     data.accounts.forEach(acc => {
+                        // Add to dropdown
                         const option = document.createElement('option');
                         option.value = acc.id;
                         option.textContent = acc.email;
                         select.appendChild(option);
+                        
+                        // Add to list
+                        list.innerHTML += `
+                            <div style="border:1px solid #ddd; padding:10px; margin:5px 0; border-radius:5px;">
+                                <strong>${acc.email}</strong><br>
+                                <small>Server: ${acc.smtp_server}:${acc.smtp_port}</small>
+                            </div>
+                        `;
                     });
+                } else {
+                    list.innerHTML = '<p>No SMTP accounts added yet.</p>';
                 }
             } catch(e) {
                 console.error('Error loading SMTP:', e);
             }
         }
         
+        // Send email
         async function sendEmail() {
             const toEmail = document.getElementById('toEmail').value;
             const subject = document.getElementById('subject').value;
             const body = document.getElementById('body').value;
-            const smtpId = document.getElementById('smtpAccount').value;
+            const smtpId = document.getElementById('smtpSelect').value;
             
             if(!toEmail || !subject || !body || !smtpId) {
-                alert('Please fill all fields');
+                document.getElementById('result').innerHTML = 
+                    '<p class="error">Please fill all fields</p>';
                 return;
             }
             
@@ -121,21 +225,25 @@
                 });
                 
                 const data = await res.json();
-                document.getElementById('result').innerHTML = 
-                    `<div style="color: ${data.success ? 'green' : 'red'}">${data.message}</div>`;
                 
                 if(data.success) {
+                    document.getElementById('result').innerHTML = 
+                        `<p class="success">✅ ${data.message}</p>`;
                     document.getElementById('toEmail').value = '';
                     document.getElementById('subject').value = '';
                     document.getElementById('body').value = '';
                     loadStats();
+                } else {
+                    document.getElementById('result').innerHTML = 
+                        `<p class="error">❌ ${data.message}</p>`;
                 }
             } catch(e) {
                 document.getElementById('result').innerHTML = 
-                    `<div style="color: red">Error: ${e.message}</div>`;
+                    `<p class="error">❌ Network error: ${e.message}</p>`;
             }
         }
         
+        // Add SMTP
         async function addSMTP() {
             const email = document.getElementById('smtpEmail').value;
             const password = document.getElementById('smtpPassword').value;
@@ -172,40 +280,64 @@
             }
         }
         
+        // Load history
         async function loadHistory() {
             try {
                 const res = await fetch(API_URL + '/history');
                 const data = await res.json();
                 
-                let html = '<table border="1" width="100%">';
-                html += '<tr><th>To</th><th>Subject</th><th>Status</th><th>Time</th></tr>';
+                const list = document.getElementById('historyList');
+                list.innerHTML = '';
                 
                 if(data.success && data.history.length > 0) {
                     data.history.reverse().forEach(email => {
-                        html += `<tr>
-                            <td>${email.to_email}</td>
-                            <td>${email.subject.substring(0, 30)}...</td>
-                            <td style="color: ${email.status === 'success' ? 'green' : 'red'}">
-                                ${email.status}
-                            </td>
-                            <td>${email.sent_at}</td>
-                        </tr>`;
+                        list.innerHTML += `
+                            <div style="border:1px solid #ddd; padding:10px; margin:5px 0; border-radius:5px;">
+                                <strong>To:</strong> ${email.to_email}<br>
+                                <strong>Subject:</strong> ${email.subject}<br>
+                                <strong>Status:</strong> <span style="color:${email.status === 'success' ? 'green' : 'red'}">
+                                    ${email.status}
+                                </span><br>
+                                <strong>Time:</strong> ${email.sent_at}
+                            </div>
+                        `;
                     });
                 } else {
-                    html += '<tr><td colspan="4">No emails sent yet</td></tr>';
+                    list.innerHTML = '<p>No emails sent yet.</p>';
                 }
-                
-                html += '</table>';
-                document.getElementById('history').innerHTML = html;
             } catch(e) {
                 console.error('Error loading history:', e);
             }
         }
         
-        // Load on startup
-        loadStats();
-        loadSMTP();
-        loadHistory();
+        // Upgrade plan
+        async function upgradePlan() {
+            if(confirm('Upgrade to Pro plan for $99/month?')) {
+                try {
+                    const res = await fetch(API_URL + '/upgrade', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({})
+                    });
+                    
+                    const data = await res.json();
+                    alert(data.message);
+                    
+                    if(data.success) {
+                        loadStats();
+                    }
+                } catch(e) {
+                    alert('Error: ' + e.message);
+                }
+            }
+        }
+        
+        // Initialize on page load
+        window.onload = function() {
+            loadStats();
+            loadSMTP();
+            console.log('🌐 Email Tool Loaded - CORS Enabled');
+        };
     </script>
 </body>
 </html>
