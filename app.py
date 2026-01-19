@@ -1,18 +1,17 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from datetime import datetime
+import json
+import re
+import os
 import smtplib
 import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import csv
-import json
-import re
-import os
 
 # Initialize Flask app
 app = Flask(__name__, static_folder='templates')
-CORS(app)  # Allow all origins
+CORS(app)
 
 # Simple in-memory storage
 emails_history = []
@@ -21,7 +20,7 @@ email_templates = []
 
 # User stats
 user_stats = {
-    "plan": "free",  # free or paid
+    "plan": "free",
     "emails_today": 0,
     "total_emails": 0,
     "last_reset": datetime.now().strftime("%Y-%m-%d")
@@ -38,7 +37,6 @@ def validate_email(email):
 
 def can_send_email():
     """Check if user can send more emails today"""
-    # Reset counter if new day
     today = datetime.now().strftime("%Y-%m-%d")
     if user_stats["last_reset"] != today:
         user_stats["emails_today"] = 0
@@ -78,13 +76,13 @@ def send_email_smtp(smtp_config, to_email, subject, body, html_body=None):
 # ========== ROUTES ==========
 
 @app.route('/')
-def serve_index():
+def home():
     """Serve the frontend HTML"""
     return send_from_directory('templates', 'index.html')
 
 @app.route('/<path:path>')
 def serve_static(path):
-    """Serve static files from templates folder"""
+    """Serve static files"""
     return send_from_directory('templates', path)
 
 @app.route('/api/')
@@ -98,7 +96,6 @@ def api_info():
         "endpoints": {
             "/api/stats": "GET - Get statistics",
             "/api/send": "POST - Send single email",
-            "/api/send/bulk": "POST - Send bulk emails",
             "/api/smtp": "GET/POST - SMTP accounts",
             "/api/templates": "GET/POST - Email templates",
             "/api/history": "GET - Email history",
@@ -209,111 +206,6 @@ def send_email():
         "email_id": email_record["id"]
     })
 
-@app.route('/api/send/bulk', methods=['POST'])
-def send_bulk():
-    """Send bulk emails from CSV"""
-    if 'csv_file' not in request.files:
-        return jsonify({
-            "success": False,
-            "message": "No CSV file uploaded"
-        }), 400
-    
-    file = request.files['csv_file']
-    smtp_account_id = request.form.get('smtp_account_id', type=int)
-    campaign_name = request.form.get('campaign_name', 'Bulk Campaign')
-    
-    if not smtp_account_id:
-        return jsonify({
-            "success": False,
-            "message": "SMTP account ID required"
-        }), 400
-    
-    # Find SMTP account
-    smtp_account = None
-    for acc in smtp_accounts:
-        if acc['id'] == smtp_account_id:
-            smtp_account = acc
-            break
-    
-    if not smtp_account:
-        return jsonify({
-            "success": False,
-            "message": "SMTP account not found"
-        }), 404
-    
-    # Read CSV
-    csv_data = file.read().decode('utf-8').splitlines()
-    reader = csv.DictReader(csv_data)
-    
-    results = []
-    emails_to_send = []
-    
-    # First, collect all emails
-    for row in reader:
-        if 'email' not in row or 'subject' not in row:
-            continue
-        
-        emails_to_send.append({
-            'email': row['email'],
-            'subject': row['subject'],
-            'body': row.get('body', ''),
-            'html_body': row.get('html_body')
-        })
-    
-    # Check if we can send all emails
-    if user_stats["emails_today"] + len(emails_to_send) > (PAID_LIMIT if user_stats["plan"] == "paid" else FREE_LIMIT):
-        return jsonify({
-            "success": False,
-            "message": f"Cannot send {len(emails_to_send)} emails. Daily limit would be exceeded."
-        }), 400
-    
-    # Send emails
-    for email_data in emails_to_send:
-        if not can_send_email():
-            results.append({
-                "email": email_data['email'],
-                "status": "failed",
-                "message": "Daily limit reached during sending"
-            })
-            continue
-        
-        success, message = send_email_smtp(
-            smtp_account,
-            email_data['email'],
-            email_data['subject'],
-            email_data['body'],
-            email_data.get('html_body')
-        )
-        
-        # Update stats
-        user_stats["emails_today"] += 1
-        user_stats["total_emails"] += 1
-        
-        # Save to history
-        emails_history.append({
-            "id": len(emails_history) + 1,
-            "to_email": email_data['email'],
-            "subject": email_data['subject'],
-            "status": "success" if success else "failed",
-            "message": message,
-            "sent_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "campaign": campaign_name,
-            "opened": False
-        })
-        
-        results.append({
-            "email": email_data['email'],
-            "status": "success" if success else "failed",
-            "message": message
-        })
-    
-    return jsonify({
-        "success": True,
-        "message": f"Processed {len(results)} emails",
-        "campaign": campaign_name,
-        "results": results
-    })
-
 @app.route('/api/smtp', methods=['GET'])
 def get_smtp_accounts():
     """Get all SMTP accounts"""
@@ -390,95 +282,26 @@ def test_smtp_account(account_id):
             "message": f"SMTP connection failed: {str(e)}"
         })
 
-@app.route('/api/templates', methods=['GET'])
-def get_templates():
-    """Get all email templates"""
-    return jsonify({
-        "success": True,
-        "templates": email_templates
-    })
-
-@app.route('/api/templates', methods=['POST'])
-def add_template():
-    """Add new email template"""
-    data = request.json
-    
-    if 'name' not in data or 'subject' not in data or 'body' not in data:
-        return jsonify({
-            "success": False,
-            "message": "Missing required fields: name, subject, body"
-        }), 400
-    
-    # Create new template
-    new_template = {
-        "id": len(email_templates) + 1,
-        "name": data['name'],
-        "subject": data['subject'],
-        "body": data['body'],
-        "html_body": data.get('html_body', ''),
-        "variables": data.get('variables', []),
-        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
-    
-    email_templates.append(new_template)
-    
-    return jsonify({
-        "success": True,
-        "message": "Template added successfully",
-        "template_id": new_template["id"],
-        "template": new_template
-    })
-
 @app.route('/api/history', methods=['GET'])
 def get_history():
     """Get email history"""
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
-    
-    # Simple pagination
-    start = (page - 1) * per_page
-    end = start + per_page
-    
-    history_page = emails_history[start:end]
-    
     return jsonify({
         "success": True,
-        "history": history_page,
-        "page": page,
-        "per_page": per_page,
-        "total": len(emails_history),
-        "total_pages": (len(emails_history) + per_page - 1) // per_page
+        "history": emails_history[-50:],  # Last 50 emails
+        "total": len(emails_history)
     })
 
 @app.route('/api/upgrade', methods=['POST'])
 def upgrade_plan():
     """Upgrade to paid plan"""
-    data = request.json
-    
-    # Simple upgrade - no payment verification
     user_stats["plan"] = "paid"
     
     return jsonify({
         "success": True,
         "message": "Upgraded to paid plan successfully!",
         "plan": "paid",
-        "daily_limit": PAID_LIMIT,
-        "new_limit": "100 emails per day"
+        "daily_limit": PAID_LIMIT
     })
-
-@app.route('/api/track/open/<int:email_id>', methods=['GET'])
-def track_email_open(email_id):
-    """Track email opens"""
-    for email in emails_history:
-        if email["id"] == email_id:
-            email["opened"] = True
-            email["opened_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            break
-    
-    # Return 1x1 transparent pixel
-    from flask import Response
-    pixel = b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\x00\x00\x00\x21\xf9\x04\x01\x00\x00\x00\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3b'
-    return Response(pixel, mimetype='image/gif')
 
 # ========== RUN APP ==========
 
@@ -487,9 +310,7 @@ if __name__ == '__main__':
     print(f"""
     📧 Email Marketing Tool
     {'='*40}
-    Local: http://127.0.0.1:{port}
-    API: http://127.0.0.1:{port}/api/
-    Frontend: http://127.0.0.1:{port}/
+    Running on port: {port}
     {'='*40}
     """)
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(host='0.0.0.0', port=port)
