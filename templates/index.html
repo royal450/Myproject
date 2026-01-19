@@ -1,93 +1,103 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Render FCM Push Tester</title>
-
-  <style>
-    body {
-      background: #0f0f0f;
-      color: white;
-      padding: 25px;
-      font-family: Arial, sans-serif;
-    }
-    .box {
-      background: #181818;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 0 15px rgba(0,255,150,0.15);
-    }
-    input, button {
-      width: 100%;
-      padding: 12px;
-      border-radius: 10px;
-      border: none;
-      margin-top: 12px;
-      font-size: 16px;
-    }
-    input {
-      background: #222;
-      color: white;
-    }
-    button {
-      background: #00ff99;
-      color: #000;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 15px;
-    }
-    pre {
-      background: #111;
-      padding: 15px;
-      border-radius: 10px;
-      margin-top: 20px;
-      color: #00ff99;
-      overflow-x: auto;
-    }
-  </style>
+    <title>Email Tool - Vercel</title>
+    <style>
+        body { font-family: Arial; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .card { border: 1px solid #ddd; padding: 20px; margin: 10px 0; border-radius: 5px; }
+        button { background: #0070f3; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        input, textarea { width: 100%; padding: 8px; margin: 5px 0; }
+    </style>
 </head>
-
 <body>
-
-  <h2>🔥 Render Push Notification Tester</h2>
-
-  <div class="box">
-    <label>Receiver Token or Topic:</label>
-    <input id="token" value="/topics/all" placeholder="Token or /topics/all">
-
-    <label>Notification Title:</label>
-    <input id="title" value="🔥 Render Test!" placeholder="Enter title">
-
-    <label>Notification Body:</label>
-    <input id="body" value="Bro notification aa gayi! 😎" placeholder="Enter message">
-
-    <button onclick="send()">SEND NOTIFICATION</button>
-  </div>
-
-  <pre id="result">Waiting...</pre>
-
-  <script>
-    function send() {
-      const token = document.getElementById("token").value;
-      const title = document.getElementById("title").value;
-      const body = document.getElementById("body").value;
-
-      fetch("/send", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ token, title, body })
-      })
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById("result").textContent =
-          JSON.stringify(data, null, 2);
-      })
-      .catch(err => {
-        document.getElementById("result").textContent = "Error: " + err;
-      });
-    }
-  </script>
-
+    <h1>📧 Email Marketing Tool</h1>
+    
+    <div class="card">
+        <h3>Stats</h3>
+        <div id="stats">Loading...</div>
+        <button onclick="loadStats()">Refresh</button>
+    </div>
+    
+    <div class="card">
+        <h3>Send Single Email</h3>
+        <input id="toEmail" placeholder="To Email">
+        <input id="subject" placeholder="Subject">
+        <textarea id="body" placeholder="Body" rows="4"></textarea>
+        <button onclick="sendEmail()">Send Email</button>
+    </div>
+    
+    <div class="card">
+        <h3>Add SMTP Account</h3>
+        <input id="smtpEmail" placeholder="Your Email" type="email">
+        <input id="smtpPass" placeholder="Password/App Password" type="password">
+        <button onclick="addSMTP()">Add SMTP</button>
+    </div>
+    
+    <script>
+        const API_URL = window.location.origin;
+        
+        async function loadStats() {
+            const res = await fetch(`${API_URL}/stats`);
+            const data = await res.json();
+            document.getElementById('stats').innerHTML = `
+                Plan: ${data.user_stats.plan}<br>
+                Sent Today: ${data.user_stats.emails_today}/${data.user_stats.daily_limit}<br>
+                Total Sent: ${data.user_stats.total_emails}<br>
+                Success Rate: ${data.email_stats.success_rate.toFixed(1)}%
+            `;
+        }
+        
+        async function sendEmail() {
+            const toEmail = document.getElementById('toEmail').value;
+            const subject = document.getElementById('subject').value;
+            const body = document.getElementById('body').value;
+            
+            const res = await fetch(`${API_URL}/send`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    to_email: toEmail,
+                    subject: subject,
+                    body: body,
+                    smtp_account_id: 1
+                })
+            });
+            
+            const result = await res.json();
+            alert(result.message);
+            if(result.success) {
+                loadStats();
+                document.getElementById('toEmail').value = '';
+                document.getElementById('subject').value = '';
+                document.getElementById('body').value = '';
+            }
+        }
+        
+        async function addSMTP() {
+            const email = document.getElementById('smtpEmail').value;
+            const password = document.getElementById('smtpPass').value;
+            
+            const res = await fetch(`${API_URL}/smtp`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    email: email,
+                    password: password,
+                    smtp_server: 'smtp.gmail.com',
+                    smtp_port: 587
+                })
+            });
+            
+            const result = await res.json();
+            alert(result.message);
+            if(result.success) {
+                document.getElementById('smtpEmail').value = '';
+                document.getElementById('smtpPass').value = '';
+            }
+        }
+        
+        // Load stats on page load
+        loadStats();
+    </script>
 </body>
 </html>
