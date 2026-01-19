@@ -6,8 +6,10 @@ import re
 import os
 import smtplib
 import ssl
+import csv
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from io import StringIO
 
 # Initialize Flask app
 app = Flask(__name__, static_folder='templates')
@@ -96,6 +98,7 @@ def api_info():
         "endpoints": {
             "/api/stats": "GET - Get statistics",
             "/api/send": "POST - Send single email",
+            "/api/send/bulk": "POST - Send bulk emails",
             "/api/smtp": "GET/POST - SMTP accounts",
             "/api/templates": "GET/POST - Email templates",
             "/api/history": "GET - Email history",
@@ -206,6 +209,107 @@ def send_email():
         "email_id": email_record["id"]
     })
 
+@app.route('/api/send/bulk', methods=['POST'])
+def send_bulk():
+    """Send bulk emails from CSV (without pandas)"""
+    if 'csv_file' not in request.files:
+        return jsonify({
+            "success": False,
+            "message": "No CSV file uploaded"
+        }), 400
+    
+    file = request.files['csv_file']
+    smtp_account_id = request.form.get('smtp_account_id', type=int)
+    campaign_name = request.form.get('campaign_name', 'Bulk Campaign')
+    
+    if not smtp_account_id:
+        return jsonify({
+            "success": False,
+            "message": "SMTP account ID required"
+        }), 400
+    
+    # Find SMTP account
+    smtp_account = None
+    for acc in smtp_accounts:
+        if acc['id'] == smtp_account_id:
+            smtp_account = acc
+            break
+    
+    if not smtp_account:
+        return jsonify({
+            "success": False,
+            "message": "SMTP account not found"
+        }), 404
+    
+    # Read CSV without pandas
+    csv_content = file.read().decode('utf-8')
+    csv_reader = csv.DictReader(StringIO(csv_content))
+    
+    emails_to_send = []
+    for row in csv_reader:
+        if 'email' in row and 'subject' in row:
+            emails_to_send.append({
+                'email': row['email'],
+                'subject': row['subject'],
+                'body': row.get('body', ''),
+                'html_body': row.get('html_body')
+            })
+    
+    # Check limit
+    if user_stats["emails_today"] + len(emails_to_send) > (PAID_LIMIT if user_stats["plan"] == "paid" else FREE_LIMIT):
+        return jsonify({
+            "success": False,
+            "message": f"Cannot send {len(emails_to_send)} emails. Daily limit would be exceeded."
+        }), 400
+    
+    # Send emails
+    results = []
+    for email_data in emails_to_send:
+        if not can_send_email():
+            results.append({
+                "email": email_data['email'],
+                "status": "failed",
+                "message": "Daily limit reached"
+            })
+            continue
+        
+        success, message = send_email_smtp(
+            smtp_account,
+            email_data['email'],
+            email_data['subject'],
+            email_data['body'],
+            email_data.get('html_body')
+        )
+        
+        # Update stats
+        user_stats["emails_today"] += 1
+        user_stats["total_emails"] += 1
+        
+        # Save to history
+        emails_history.append({
+            "id": len(emails_history) + 1,
+            "to_email": email_data['email'],
+            "subject": email_data['subject'],
+            "status": "success" if success else "failed",
+            "message": message,
+            "sent_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "campaign": campaign_name,
+            "opened": False
+        })
+        
+        results.append({
+            "email": email_data['email'],
+            "status": "success" if success else "failed",
+            "message": message
+        })
+    
+    return jsonify({
+        "success": True,
+        "message": f"Sent {len([r for r in results if r['status'] == 'success'])} emails successfully",
+        "total": len(results),
+        "results": results
+    })
+
 @app.route('/api/smtp', methods=['GET'])
 def get_smtp_accounts():
     """Get all SMTP accounts"""
@@ -282,6 +386,45 @@ def test_smtp_account(account_id):
             "message": f"SMTP connection failed: {str(e)}"
         })
 
+@app.route('/api/templates', methods=['GET'])
+def get_templates():
+    """Get all email templates"""
+    return jsonify({
+        "success": True,
+        "templates": email_templates
+    })
+
+@app.route('/api/templates', methods=['POST'])
+def add_template():
+    """Add new email template"""
+    data = request.json
+    
+    if 'name' not in data or 'subject' not in data or 'body' not in data:
+        return jsonify({
+            "success": False,
+            "message": "Missing required fields: name, subject, body"
+        }), 400
+    
+    # Create new template
+    new_template = {
+        "id": len(email_templates) + 1,
+        "name": data['name'],
+        "subject": data['subject'],
+        "body": data['body'],
+        "html_body": data.get('html_body', ''),
+        "variables": data.get('variables', []),
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    
+    email_templates.append(new_template)
+    
+    return jsonify({
+        "success": True,
+        "message": "Template added successfully",
+        "template_id": new_template["id"],
+        "template": new_template
+    })
+
 @app.route('/api/history', methods=['GET'])
 def get_history():
     """Get email history"""
@@ -302,6 +445,20 @@ def upgrade_plan():
         "plan": "paid",
         "daily_limit": PAID_LIMIT
     })
+
+@app.route('/api/track/open/<int:email_id>', methods=['GET'])
+def track_email_open(email_id):
+    """Track email opens"""
+    for email in emails_history:
+        if email["id"] == email_id:
+            email["opened"] = True
+            email["opened_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            break
+    
+    # Return 1x1 transparent pixel
+    from flask import Response
+    pixel = b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\x00\x00\x00\x21\xf9\x04\x01\x00\x00\x00\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3b'
+    return Response(pixel, mimetype='image/gif')
 
 # ========== RUN APP ==========
 
