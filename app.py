@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from datetime import datetime
 import json
@@ -12,8 +12,8 @@ from email.mime.multipart import MIMEMultipart
 from io import StringIO
 
 # Initialize Flask app
-app = Flask(__name__)
-CORS(app)
+app = Flask(__name__, static_folder='templates', static_url_path='')
+CORS(app)  # ✅ CROSS ENABLED - kahi se bhi access
 
 # Simple in-memory storage
 emails_history = []
@@ -71,20 +71,31 @@ def send_email_smtp(smtp_config, to_email, subject, body, html_body=None):
 # ========== ROUTES ==========
 
 @app.route('/')
-def home():
+def serve_index():
+    """Serve index.html from templates folder"""
+    return send_from_directory('templates', 'index.html')
+
+@app.route('/<path:path>')
+def serve_static(path):
+    """Serve static files from templates folder"""
+    return send_from_directory('templates', path)
+
+@app.route('/api/')
+def api_info():
     return jsonify({
         "app": "Email Marketing Tool",
         "version": "1.0",
         "status": "running",
-        "features": [
-            "Send single emails",
-            "Send bulk emails via CSV",
-            "Manage SMTP accounts",
-            "Email templates",
-            "Track opens",
-            "Free: 10 emails/day",
-            "Pro: 100 emails/day ($99/month)"
-        ]
+        "cors": "enabled",
+        "endpoints": {
+            "/api/stats": "GET - Get statistics",
+            "/api/send": "POST - Send single email",
+            "/api/send/bulk": "POST - Send bulk emails from CSV",
+            "/api/smtp": "GET/POST - Manage SMTP accounts",
+            "/api/templates": "GET/POST - Email templates",
+            "/api/history": "GET - Email history",
+            "/api/upgrade": "POST - Upgrade to paid plan"
+        }
     })
 
 @app.route('/api/stats', methods=['GET'])
@@ -325,8 +336,8 @@ def upgrade_plan():
 # ========== RUN APP ==========
 
 if __name__ == '__main__':
-    # Render automatically sets PORT environment variable
-    # We don't need to specify port
-    print("🚀 Email Marketing Tool API Started")
-    print("📧 Ready to send emails!")
-    app.run(host='0.0.0.0')  # No port specified
+    print("🚀 Email Marketing Tool Started")
+    print("🌐 CORS Enabled - Access from anywhere")
+    print("📧 Frontend: /")
+    print("🔧 API: /api/")
+    app.run(host='0.0.0.0')
