@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="text-white">Welcome, {{ user.username }}!</h1>
+        <p class="text-light">Send personalized emails with ease</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('upload') }}" class="btn btn-success btn-lg">
+            + New Campaign
+        </a>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <h6 class="text-muted">Plan</h6>
+            <h3 class="text-primary">{{ user.plan|upper }}</h3>
+            {% if user.plan == 'free' %}
+            <a href="{{ url_for('upgrade') }}" class="btn btn-warning btn-sm mt-2">
+                Upgrade to Premium
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="stat-card">
+            <h6 class="text-muted">Sent Today</h6>
+            <h3 id="sent-today">{{ quota.sent_count }}</h3>
+            <div class="progress mt-2">
+                <div id="quota-progress" class="progress-bar" 
+                     style="width: {{ (quota.sent_count / (FREE_QUOTA if user.plan == 'free' else PREMIUM_QUOTA)) * 100 }}%">
+                </div>
+            </div>
+            <small id="usage-percent">
+                {{ ((quota.sent_count / (FREE_QUOTA if user.plan == 'free' else PREMIUM_QUOTA)) * 100)|round(1) }}%
+            </small>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="stat-card">
+            <h6 class="text-muted">Remaining</h6>
+            <h3 id="remaining-quota">{{ user.get_remaining_quota() }}</h3>
+            <small class="text-muted">of {{ FREE_QUOTA if user.plan == 'free' else PREMIUM_QUOTA }} daily</small>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="stat-card">
+            <h6 class="text-muted">Failed Today</h6>
+            <h3 class="text-danger">{{ quota.failed_count }}</h3>
+            {% if quota.failed_count > 0 %}
+            <small class="text-danger">Check SMTP settings</small>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="card-title">Quick Actions</h5>
+        <div class="row mt-3">
+            <div class="col-md-3 mb-3">
+                <a href="{{ url_for('upload') }}" class="btn btn-primary w-100">
+                    📤 Upload CSV
+                </a>
+            </div>
+            <div class="col-md-3 mb-3">
+                <a href="{{ url_for('campaigns') }}" class="btn btn-info w-100">
+                    📨 View Campaigns
+                </a>
+            </div>
+            <div class="col-md-3 mb-3">
+                <a href="{{ url_for('upgrade') }}" class="btn btn-warning w-100">
+                    ⭐ Upgrade Plan
+                </a>
+            </div>
+            <div class="col-md-3 mb-3">
+                <a href="/api/smtp" target="_blank" class="btn btn-secondary w-100">
+                    ⚙️ SMTP Status
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Campaigns -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Recent Campaigns</h5>
+    </div>
+    <div class="card-body">
+        {% if campaigns %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Status</th>
+                        <th>Progress</th>
+                        <th>Created</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for campaign in campaigns %}
+                    <tr>
+                        <td>{{ campaign.name }}</td>
+                        <td>
+                            <span class="badge bg-{{ 
+                                'success' if campaign.status == 'completed' else
+                                'warning' if campaign.status == 'sending' else
+                                'danger' if campaign.status == 'failed' else
+                                'info'
+                            }}">
+                                {{ campaign.status|title }}
+                            </span>
+                        </td>
+                        <td>
+                            {{ campaign.sent_count }}/{{ campaign.total_recipients }}
+                        </td>
+                        <td>{{ campaign.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            <a href="{{ url_for('campaign_detail', id=campaign.id) }}" 
+                               class="btn btn-sm btn-outline-primary">
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <p class="text-muted">No campaigns yet</p>
+            <a href="{{ url_for('upload') }}" class="btn btn-primary">
+                Create Your First Campaign
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Email History -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Recent Email History</h5>
+    </div>
+    <div class="card-body">
+        {% if logs %}
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Recipient</th>
+                        <th>Status</th>
+                        <th>Subject</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ log.created_at.strftime('%H:%M') }}</td>
+                        <td>{{ log.recipient[:20] }}...</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if log.status == 'sent' else 'danger' }}">
+                                {{ log.status|title }}
+                            </span>
+                        </td>
+                        <td>{{ log.subject[:30] }}...</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted text-center">No email history yet</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
