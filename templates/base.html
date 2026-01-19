@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email SaaS - {% block title %}{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding-top: 20px;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: none;
+            margin-bottom: 20px;
+        }
+        .navbar {
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .stat-card h3 {
+            margin: 0;
+            font-size: 2rem;
+        }
+        .progress {
+            height: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-white">
+            <div class="container-fluid">
+                <a class="navbar-brand fw-bold text-primary" href="{{ url_for('dashboard') if session.user_id else url_for('index') }}">
+                    📧 Email SaaS
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        {% if session.user_id %}
+                            {% set user = get_current_user() %}
+                            {% if user.is_admin %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('admin_dashboard') }}">👑 Admin</a>
+                            </li>
+                            {% endif %}
+                            <li class="nav-item">
+                                <span class="nav-link text-dark">👋 {{ user.username }}</span>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('dashboard') }}">📊 Dashboard</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('upload') }}">📤 Upload</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('campaigns') }}">📨 Campaigns</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="btn btn-danger btn-sm ms-2" href="{{ url_for('logout') }}">Logout</a>
+                            </li>
+                        {% else %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="btn btn-primary btn-sm ms-2" href="{{ url_for('signup') }}">Sign Up</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'danger' else 'success' if category == 'success' else 'warning' }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Main Content -->
+        {% block content %}{% endblock %}
+
+        <!-- Footer -->
+        <footer class="text-center text-white mt-4 mb-4">
+            <p class="mb-0">📱 Email SaaS for Termux • v1.0</p>
+            <small>Made with ❤️ for Android</small>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-refresh stats every 10 seconds
+        function refreshStats() {
+            fetch('/api/stats')
+                .then(r => r.json())
+                .then(data => {
+                    // Update stats elements
+                    if (document.getElementById('sent-today')) {
+                        document.getElementById('sent-today').textContent = data.sent_today;
+                    }
+                    if (document.getElementById('remaining-quota')) {
+                        document.getElementById('remaining-quota').textContent = data.remaining;
+                    }
+                    if (document.getElementById('usage-percent')) {
+                        document.getElementById('usage-percent').textContent = data.usage_percent + '%';
+                    }
+                    if (document.getElementById('quota-progress')) {
+                        document.getElementById('quota-progress').style.width = data.usage_percent + '%';
+                    }
+                });
+        }
+        
+        // Refresh every 10 seconds if on dashboard
+        if (window.location.pathname === '/dashboard' || window.location.pathname === '/') {
+            setInterval(refreshStats, 10000);
+            refreshStats(); // Initial load
+        }
+        
+        // Auto-dismiss alerts after 5 seconds
+        setTimeout(() => {
+            document.querySelectorAll('.alert').forEach(alert => {
+                new bootstrap.Alert(alert).close();
+            });
+        }, 5000);
+    </script>
+</body>
+</html>
