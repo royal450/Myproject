@@ -1,602 +1,117 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Email Marketing Tool</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: Arial, sans-serif;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            overflow: hidden;
-        }
-        
-        header {
-            background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
-            color: white;
-            padding: 20px;
-            text-align: center;
-        }
-        
-        header h1 {
-            margin-bottom: 10px;
-            font-size: 2.5rem;
-        }
-        
-        header p {
-            opacity: 0.9;
-        }
-        
-        .main-content {
-            display: flex;
-            min-height: 500px;
-        }
-        
-        .sidebar {
-            width: 250px;
-            background: #f8f9fa;
-            padding: 20px;
-            border-right: 1px solid #dee2e6;
-        }
-        
-        .sidebar button {
-            width: 100%;
-            padding: 12px;
-            margin: 5px 0;
-            border: none;
-            background: white;
-            border-radius: 5px;
-            cursor: pointer;
-            text-align: left;
-            font-weight: bold;
-            border-left: 4px solid #4e54c8;
-            transition: all 0.3s;
-        }
-        
-        .sidebar button:hover {
-            background: #e9ecef;
-            transform: translateX(5px);
-        }
-        
-        .sidebar button.active {
-            background: #4e54c8;
-            color: white;
-        }
-        
-        .content {
-            flex: 1;
-            padding: 20px;
-        }
-        
-        .tab {
-            display: none;
-        }
-        
-        .tab.active {
-            display: block;
-            animation: fadeIn 0.5s;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        .card {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border: 1px solid #dee2e6;
-        }
-        
-        .stat-card {
-            text-align: center;
-            padding: 30px 20px;
-            background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
-            color: white;
-            border-radius: 10px;
-            margin: 10px;
-            flex: 1;
-            min-width: 200px;
-        }
-        
-        .stat-card .number {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-        
-        .stats-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin: 20px 0;
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #495057;
-        }
-        
-        .form-group input,
-        .form-group textarea,
-        .form-group select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ced4da;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-        
-        .form-group textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-        
-        .btn {
-            padding: 12px 25px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(78, 84, 200, 0.4);
-        }
-        
-        .btn-success {
-            background: #28a745;
-            color: white;
-        }
-        
-        .btn-danger {
-            background: #dc3545;
-            color: white;
-        }
-        
-        .alert {
-            padding: 15px;
-            border-radius: 5px;
-            margin: 15px 0;
-        }
-        
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .alert-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 15px 0;
-        }
-        
-        table th, table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #dee2e6;
-        }
-        
-        table th {
-            background: #f8f9fa;
-            font-weight: bold;
-        }
-        
-        .status-badge {
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        
-        .status-success {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .status-failed {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 40px;
-        }
-        
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #4e54c8;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        footer {
-            text-align: center;
-            padding: 20px;
-            background: #f8f9fa;
-            border-top: 1px solid #dee2e6;
-            color: #6c757d;
-        }
-        
-        @media (max-width: 768px) {
-            .main-content {
-                flex-direction: column;
-            }
-            
-            .sidebar {
-                width: 100%;
-                border-right: none;
-                border-bottom: 1px solid #dee2e6;
-            }
-            
-            .stats-grid {
-                flex-direction: column;
-            }
-        }
+        body { font-family: Arial; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .card { border: 1px solid #ddd; padding: 20px; margin: 10px 0; border-radius: 10px; }
+        button { background: #0070f3; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        input, textarea { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
+        .stats { display: flex; gap: 10px; margin: 20px 0; }
+        .stat-box { flex: 1; background: #f0f0f0; padding: 15px; border-radius: 5px; text-align: center; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>📧 Email Marketing Tool</h1>
-            <p>Send emails easily with SMTP | Free: 10/day | Pro: 100/day</p>
-        </header>
-        
-        <div class="main-content">
-            <div class="sidebar">
-                <button class="active" onclick="showTab('dashboard')">📊 Dashboard</button>
-                <button onclick="showTab('send')">✉️ Send Email</button>
-                <button onclick="showTab('bulk')">📦 Bulk Send</button>
-                <button onclick="showTab('smtp')">🔧 SMTP Accounts</button>
-                <button onclick="showTab('templates')">📝 Templates</button>
-                <button onclick="showTab('history')">📋 History</button>
-                <button onclick="showTab('upgrade')">⭐ Upgrade</button>
-            </div>
-            
-            <div class="content">
-                <!-- Dashboard Tab -->
-                <div id="dashboard" class="tab active">
-                    <h2>Dashboard</h2>
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div>Total Sent</div>
-                            <div class="number" id="totalSent">0</div>
-                            <div>Emails</div>
-                        </div>
-                        <div class="stat-card">
-                            <div>Today's Limit</div>
-                            <div class="number" id="todayLimit">0/10</div>
-                            <div id="planStatus">Free Plan</div>
-                        </div>
-                        <div class="stat-card">
-                            <div>Success Rate</div>
-                            <div class="number" id="successRate">0%</div>
-                            <div>Delivery</div>
-                        </div>
-                    </div>
-                    
-                    <div class="card">
-                        <h3>Quick Actions</h3>
-                        <div style="display: flex; gap: 10px; margin-top: 15px;">
-                            <button class="btn btn-primary" onclick="showTab('send')">Send Single Email</button>
-                            <button class="btn btn-primary" onclick="showTab('bulk')">Upload CSV</button>
-                            <button class="btn btn-primary" onclick="showTab('smtp')">Add SMTP</button>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Send Email Tab -->
-                <div id="send" class="tab">
-                    <h2>Send Single Email</h2>
-                    <div class="card">
-                        <div class="form-group">
-                            <label>To Email</label>
-                            <input type="email" id="toEmail" placeholder="recipient@example.com">
-                        </div>
-                        <div class="form-group">
-                            <label>Subject</label>
-                            <input type="text" id="emailSubject" placeholder="Email subject">
-                        </div>
-                        <div class="form-group">
-                            <label>Message Body</label>
-                            <textarea id="emailBody" placeholder="Type your message here..."></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>SMTP Account</label>
-                            <select id="smtpSelect">
-                                <option value="">Select SMTP Account</option>
-                            </select>
-                        </div>
-                        <button class="btn btn-primary" onclick="sendSingleEmail()">Send Email</button>
-                        <div id="sendResult" class="alert" style="display: none;"></div>
-                    </div>
-                </div>
-                
-                <!-- Bulk Send Tab -->
-                <div id="bulk" class="tab">
-                    <h2>Bulk Email Send</h2>
-                    <div class="card">
-                        <div class="form-group">
-                            <label>Upload CSV File</label>
-                            <input type="file" id="csvFile" accept=".csv">
-                            <small>CSV should have columns: email, subject, body (optional)</small>
-                        </div>
-                        <div class="form-group">
-                            <label>SMTP Account</label>
-                            <select id="bulkSmtpSelect">
-                                <option value="">Select SMTP Account</option>
-                            </select>
-                        </div>
-                        <button class="btn btn-primary" onclick="sendBulkEmails()">Upload & Send</button>
-                        <div id="bulkResult" class="alert" style="display: none;"></div>
-                    </div>
-                </div>
-                
-                <!-- SMTP Accounts Tab -->
-                <div id="smtp" class="tab">
-                    <h2>SMTP Accounts</h2>
-                    <div class="card">
-                        <h3>Add New SMTP Account</h3>
-                        <div class="form-group">
-                            <label>Email Address</label>
-                            <input type="email" id="smtpEmail" placeholder="your@gmail.com">
-                        </div>
-                        <div class="form-group">
-                            <label>Password / App Password</label>
-                            <input type="password" id="smtpPassword" placeholder="Password">
-                            <small>For Gmail, use App Password from Google Account</small>
-                        </div>
-                        <div class="form-group">
-                            <label>SMTP Server</label>
-                            <input type="text" id="smtpServer" value="smtp.gmail.com">
-                        </div>
-                        <div class="form-group">
-                            <label>SMTP Port</label>
-                            <input type="number" id="smtpPort" value="587">
-                        </div>
-                        <button class="btn btn-primary" onclick="addSmtpAccount()">Add SMTP Account</button>
-                        <div id="smtpResult" class="alert" style="display: none;"></div>
-                    </div>
-                    
-                    <div class="card">
-                        <h3>Your SMTP Accounts</h3>
-                        <div id="smtpList"></div>
-                    </div>
-                </div>
-                
-                <!-- Other tabs (Templates, History, Upgrade) -->
-                <div id="templates" class="tab">
-                    <h2>Email Templates</h2>
-                    <div class="card">
-                        <h3>Create New Template</h3>
-                        <div class="form-group">
-                            <label>Template Name</label>
-                            <input type="text" id="templateName" placeholder="Welcome Email">
-                        </div>
-                        <div class="form-group">
-                            <label>Subject</label>
-                            <input type="text" id="templateSubject" placeholder="Welcome to our service!">
-                        </div>
-                        <div class="form-group">
-                            <label>Body</label>
-                            <textarea id="templateBody" placeholder="Hello {name}, welcome to..."></textarea>
-                        </div>
-                        <button class="btn btn-primary" onclick="addTemplate()">Save Template</button>
-                    </div>
-                </div>
-                
-                <div id="history" class="tab">
-                    <h2>Email History</h2>
-                    <div class="card">
-                        <table id="historyTable">
-                            <thead>
-                                <tr>
-                                    <th>To</th>
-                                    <th>Subject</th>
-                                    <th>Status</th>
-                                    <th>Time</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- History will be loaded here -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <div id="upgrade" class="tab">
-                    <h2>Upgrade to Pro</h2>
-                    <div class="card">
-                        <h3>Pro Plan Features</h3>
-                        <ul style="margin: 15px 0; padding-left: 20px;">
-                            <li>100 emails per day (instead of 10)</li>
-                            <li>Priority email delivery</li>
-                            <li>Advanced analytics</li>
-                            <li>Email tracking</li>
-                            <li>Custom templates</li>
-                        </ul>
-                        <p style="font-size: 1.5rem; color: #4e54c8; margin: 20px 0;">
-                            <strong>$99 / month</strong>
-                        </p>
-                        <button class="btn btn-success" onclick="upgradePlan()">Upgrade Now</button>
-                    </div>
-                </div>
-            </div>
+    <h1>📧 Email Marketing Tool</h1>
+    
+    <div class="stats">
+        <div class="stat-box">
+            <h3>Today</h3>
+            <div id="todayCount">0</div>
         </div>
-        
-        <footer>
-            <p>Email Marketing Tool &copy; 2024 | Made with ❤️ for Termux Users</p>
-            <p id="apiStatus">API: Not connected</p>
-        </footer>
+        <div class="stat-box">
+            <h3>Total</h3>
+            <div id="totalCount">0</div>
+        </div>
+        <div class="stat-box">
+            <h3>Plan</h3>
+            <div id="planType">Free</div>
+        </div>
     </div>
-
+    
+    <div class="card">
+        <h2>Send Email</h2>
+        <input type="email" id="toEmail" placeholder="To Email">
+        <input type="text" id="subject" placeholder="Subject">
+        <textarea id="body" rows="4" placeholder="Message"></textarea>
+        <select id="smtpAccount">
+            <option value="">Select SMTP Account</option>
+        </select>
+        <button onclick="sendEmail()">Send Email</button>
+        <div id="result"></div>
+    </div>
+    
+    <div class="card">
+        <h2>Add SMTP Account</h2>
+        <input type="email" id="smtpEmail" placeholder="Your Email">
+        <input type="password" id="smtpPassword" placeholder="Password">
+        <input type="text" id="smtpServer" value="smtp.gmail.com" placeholder="SMTP Server">
+        <input type="number" id="smtpPort" value="587" placeholder="Port">
+        <button onclick="addSMTP()">Add SMTP</button>
+    </div>
+    
+    <div class="card">
+        <h2>Email History</h2>
+        <button onclick="loadHistory()">Refresh History</button>
+        <div id="history"></div>
+    </div>
+    
     <script>
         const API_URL = window.location.origin + '/api';
         
-        // Tab management
-        function showTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Remove active class from all buttons
-            document.querySelectorAll('.sidebar button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Show selected tab
-            document.getElementById(tabName).classList.add('active');
-            
-            // Add active class to clicked button
-            event.target.classList.add('active');
-            
-            // Load data for tab
-            if (tabName === 'dashboard') {
-                loadStats();
-            } else if (tabName === 'smtp') {
-                loadSmtpAccounts();
-            } else if (tabName === 'history') {
-                loadHistory();
-            }
-        }
-        
-        // Load statistics
         async function loadStats() {
             try {
-                const response = await fetch(API_URL + '/stats');
-                const data = await response.json();
+                const res = await fetch(API_URL + '/stats');
+                const data = await res.json();
                 
-                if (data.success) {
-                    document.getElementById('totalSent').textContent = data.stats.total_emails;
-                    document.getElementById('todayLimit').textContent = 
+                if(data.success) {
+                    document.getElementById('todayCount').textContent = 
                         `${data.stats.emails_today}/${data.stats.daily_limit}`;
-                    document.getElementById('successRate').textContent = 
-                        data.stats.success_rate + '%';
-                    document.getElementById('planStatus').textContent = 
-                        data.stats.plan === 'paid' ? 'Pro Plan' : 'Free Plan';
-                    
-                    document.getElementById('apiStatus').textContent = 'API: Connected ✓';
-                    document.getElementById('apiStatus').style.color = 'green';
+                    document.getElementById('totalCount').textContent = data.stats.total_emails;
+                    document.getElementById('planType').textContent = 
+                        data.stats.plan === 'paid' ? 'Pro' : 'Free';
                 }
-            } catch (error) {
-                console.error('Error loading stats:', error);
-                document.getElementById('apiStatus').textContent = 'API: Error connecting';
-                document.getElementById('apiStatus').style.color = 'red';
+            } catch(e) {
+                console.error('Error loading stats:', e);
             }
         }
         
-        // Load SMTP accounts
-        async function loadSmtpAccounts() {
+        async function loadSMTP() {
             try {
-                const response = await fetch(API_URL + '/smtp');
-                const data = await response.json();
+                const res = await fetch(API_URL + '/smtp');
+                const data = await res.json();
                 
-                const smtpSelect = document.getElementById('smtpSelect');
-                const bulkSmtpSelect = document.getElementById('bulkSmtpSelect');
-                const smtpList = document.getElementById('smtpList');
+                const select = document.getElementById('smtpAccount');
+                select.innerHTML = '<option value="">Select SMTP Account</option>';
                 
-                // Clear options
-                smtpSelect.innerHTML = '<option value="">Select SMTP Account</option>';
-                bulkSmtpSelect.innerHTML = '<option value="">Select SMTP Account</option>';
-                smtpList.innerHTML = '';
-                
-                if (data.success && data.accounts.length > 0) {
-                    data.accounts.forEach(account => {
-                        // Add to dropdowns
-                        const option = `<option value="${account.id}">${account.email}</option>`;
-                        smtpSelect.innerHTML += option;
-                        bulkSmtpSelect.innerHTML += option;
-                        
-                        // Add to list
-                        smtpList.innerHTML += `
-                            <div class="card" style="margin-bottom: 10px;">
-                                <strong>${account.email}</strong><br>
-                                <small>Server: ${account.smtp_server}:${account.smtp_port}</small>
-                            </div>
-                        `;
+                if(data.success && data.accounts.length > 0) {
+                    data.accounts.forEach(acc => {
+                        const option = document.createElement('option');
+                        option.value = acc.id;
+                        option.textContent = acc.email;
+                        select.appendChild(option);
                     });
-                } else {
-                    smtpList.innerHTML = '<p>No SMTP accounts added yet.</p>';
                 }
-            } catch (error) {
-                console.error('Error loading SMTP accounts:', error);
+            } catch(e) {
+                console.error('Error loading SMTP:', e);
             }
         }
         
-        // Send single email
-        async function sendSingleEmail() {
+        async function sendEmail() {
             const toEmail = document.getElementById('toEmail').value;
-            const subject = document.getElementById('emailSubject').value;
-            const body = document.getElementById('emailBody').value;
-            const smtpId = document.getElementById('smtpSelect').value;
-            const resultDiv = document.getElementById('sendResult');
+            const subject = document.getElementById('subject').value;
+            const body = document.getElementById('body').value;
+            const smtpId = document.getElementById('smtpAccount').value;
             
-            if (!toEmail || !subject || !body || !smtpId) {
-                showAlert(resultDiv, 'Please fill all fields', 'error');
+            if(!toEmail || !subject || !body || !smtpId) {
+                alert('Please fill all fields');
                 return;
             }
             
             try {
-                const response = await fetch(API_URL + '/send', {
+                const res = await fetch(API_URL + '/send', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
                         to_email: toEmail,
                         subject: subject,
@@ -605,43 +120,37 @@
                     })
                 });
                 
-                const data = await response.json();
+                const data = await res.json();
+                document.getElementById('result').innerHTML = 
+                    `<div style="color: ${data.success ? 'green' : 'red'}">${data.message}</div>`;
                 
-                if (data.success) {
-                    showAlert(resultDiv, 'Email sent successfully!', 'success');
-                    // Clear form
+                if(data.success) {
                     document.getElementById('toEmail').value = '';
-                    document.getElementById('emailSubject').value = '';
-                    document.getElementById('emailBody').value = '';
-                    // Update stats
+                    document.getElementById('subject').value = '';
+                    document.getElementById('body').value = '';
                     loadStats();
-                } else {
-                    showAlert(resultDiv, 'Error: ' + data.message, 'error');
                 }
-            } catch (error) {
-                showAlert(resultDiv, 'Network error: ' + error, 'error');
+            } catch(e) {
+                document.getElementById('result').innerHTML = 
+                    `<div style="color: red">Error: ${e.message}</div>`;
             }
         }
         
-        // Add SMTP account
-        async function addSmtpAccount() {
+        async function addSMTP() {
             const email = document.getElementById('smtpEmail').value;
             const password = document.getElementById('smtpPassword').value;
             const server = document.getElementById('smtpServer').value;
             const port = document.getElementById('smtpPort').value;
-            const resultDiv = document.getElementById('smtpResult');
             
-            if (!email || !password || !server || !port) {
-                showAlert(resultDiv, 'Please fill all fields', 'error');
+            if(!email || !password || !server || !port) {
+                alert('Please fill all fields');
                 return;
             }
             
             try {
-                const response = await fetch(API_URL + '/smtp', {
+                const res = await fetch(API_URL + '/smtp', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
                         email: email,
                         password: password,
@@ -650,178 +159,53 @@
                     })
                 });
                 
-                const data = await response.json();
+                const data = await res.json();
+                alert(data.message);
                 
-                if (data.success) {
-                    showAlert(resultDiv, 'SMTP account added successfully!', 'success');
-                    // Clear form
+                if(data.success) {
                     document.getElementById('smtpEmail').value = '';
                     document.getElementById('smtpPassword').value = '';
-                    // Reload SMTP list
-                    loadSmtpAccounts();
-                } else {
-                    showAlert(resultDiv, 'Error: ' + data.message, 'error');
+                    loadSMTP();
                 }
-            } catch (error) {
-                showAlert(resultDiv, 'Network error: ' + error, 'error');
+            } catch(e) {
+                alert('Error: ' + e.message);
             }
         }
         
-        // Send bulk emails
-        async function sendBulkEmails() {
-            const fileInput = document.getElementById('csvFile');
-            const smtpId = document.getElementById('bulkSmtpSelect').value;
-            const resultDiv = document.getElementById('bulkResult');
-            
-            if (!fileInput.files[0] || !smtpId) {
-                showAlert(resultDiv, 'Please select CSV file and SMTP account', 'error');
-                return;
-            }
-            
-            const formData = new FormData();
-            formData.append('csv_file', fileInput.files[0]);
-            formData.append('smtp_account_id', smtpId);
-            formData.append('campaign_name', 'Bulk Campaign');
-            
-            try {
-                const response = await fetch(API_URL + '/send/bulk', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showAlert(resultDiv, `Sent ${data.results.length} emails successfully!`, 'success');
-                    fileInput.value = '';
-                    loadStats();
-                } else {
-                    showAlert(resultDiv, 'Error: ' + data.message, 'error');
-                }
-            } catch (error) {
-                showAlert(resultDiv, 'Network error: ' + error, 'error');
-            }
-        }
-        
-        // Add template
-        async function addTemplate() {
-            const name = document.getElementById('templateName').value;
-            const subject = document.getElementById('templateSubject').value;
-            const body = document.getElementById('templateBody').value;
-            
-            if (!name || !subject || !body) {
-                alert('Please fill all fields');
-                return;
-            }
-            
-            try {
-                const response = await fetch(API_URL + '/templates', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        name: name,
-                        subject: subject,
-                        body: body
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert('Template saved successfully!');
-                    document.getElementById('templateName').value = '';
-                    document.getElementById('templateSubject').value = '';
-                    document.getElementById('templateBody').value = '';
-                } else {
-                    alert('Error: ' + data.message);
-                }
-            } catch (error) {
-                alert('Network error: ' + error);
-            }
-        }
-        
-        // Load history
         async function loadHistory() {
             try {
-                const response = await fetch(API_URL + '/history');
-                const data = await response.json();
+                const res = await fetch(API_URL + '/history');
+                const data = await res.json();
                 
-                const tbody = document.querySelector('#historyTable tbody');
-                tbody.innerHTML = '';
+                let html = '<table border="1" width="100%">';
+                html += '<tr><th>To</th><th>Subject</th><th>Status</th><th>Time</th></tr>';
                 
-                if (data.success && data.history.length > 0) {
-                    data.history.forEach(email => {
-                        const row = `
-                            <tr>
-                                <td>${email.to_email}</td>
-                                <td>${email.subject.substring(0, 30)}${email.subject.length > 30 ? '...' : ''}</td>
-                                <td><span class="status-badge ${email.status === 'success' ? 'status-success' : 'status-failed'}">${email.status}</span></td>
-                                <td>${email.sent_at}</td>
-                            </tr>
-                        `;
-                        tbody.innerHTML += row;
+                if(data.success && data.history.length > 0) {
+                    data.history.reverse().forEach(email => {
+                        html += `<tr>
+                            <td>${email.to_email}</td>
+                            <td>${email.subject.substring(0, 30)}...</td>
+                            <td style="color: ${email.status === 'success' ? 'green' : 'red'}">
+                                ${email.status}
+                            </td>
+                            <td>${email.sent_at}</td>
+                        </tr>`;
                     });
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="4">No emails sent yet</td></tr>';
+                    html += '<tr><td colspan="4">No emails sent yet</td></tr>';
                 }
-            } catch (error) {
-                console.error('Error loading history:', error);
+                
+                html += '</table>';
+                document.getElementById('history').innerHTML = html;
+            } catch(e) {
+                console.error('Error loading history:', e);
             }
         }
         
-        // Upgrade plan
-        async function upgradePlan() {
-            if (confirm('Upgrade to Pro plan for $99/month?')) {
-                try {
-                    const response = await fetch(API_URL + '/upgrade', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({})
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        alert('Upgraded to Pro plan successfully!');
-                        loadStats();
-                    } else {
-                        alert('Error: ' + data.message);
-                    }
-                } catch (error) {
-                    alert('Network error: ' + error);
-                }
-            }
-        }
-        
-        // Helper function to show alerts
-        function showAlert(element, message, type) {
-            element.textContent = message;
-            element.className = 'alert alert-' + (type === 'success' ? 'success' : 'error');
-            element.style.display = 'block';
-            
-            setTimeout(() => {
-                element.style.display = 'none';
-            }, 5000);
-        }
-        
-        // Initialize on page load
-        window.onload = function() {
-            loadStats();
-            loadSmtpAccounts();
-            // Test API connection
-            fetch(API_URL + '/')
-                .then(response => response.json())
-                .then(data => {
-                    console.log('API connected:', data);
-                })
-                .catch(error => {
-                    console.error('API connection failed:', error);
-                });
-        };
+        // Load on startup
+        loadStats();
+        loadSMTP();
+        loadHistory();
     </script>
 </body>
 </html>
